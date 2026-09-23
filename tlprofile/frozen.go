@@ -26,7 +26,10 @@ func FreezeObject(value bin.Object) (*FrozenObject, error) {
 	if err := value.Encode(&canonical); err != nil {
 		return nil, fmt.Errorf("tlprofile: encode frozen canonical object: %w", err)
 	}
-	cursor := &bin.Buffer{Buf: canonical.Copy()}
+	// The decoder advances only cursor's slice header. Generated string/bytes
+	// decoders materialize owned fields, so it can consume the uniquely owned
+	// canonical buffer directly without a second full-payload clone.
+	cursor := &bin.Buffer{Buf: canonical.Raw()}
 	clone, err := DecodeObject(ProfileCanonical, cursor, Limits{})
 	if err != nil {
 		return nil, fmt.Errorf("tlprofile: clone frozen canonical object: %w", err)
